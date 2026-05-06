@@ -41,7 +41,7 @@ This project simulates how an operating system schedules CPU processes. Built as
 
 ## What I Learned
 
-- **Implementing and comparing multiple scheduling algorithms from scratch
-- **Building a real-time animated UI with JavaFX and the Timeline API
-- **Syncing live data between backend logic and observable UI properties
-- **Designing a clean architecture that separates concerns between the scheduler engine and the GUI
+- Implementing and comparing multiple scheduling algorithms from scratch
+- Building a real-time animated UI with JavaFX and the Timeline API
+- Syncing live data between backend logic and observable UI properties
+- Designing a clean architecture that separates concerns between the scheduler engine and the GUI
