@@ -15,17 +15,13 @@ import java.util.*;
 
 /**
  * CPU Scheduler – all algorithms validated against
- * Silberschatz, Galvin & Gagne "Operating System Concepts" 10th ed, Chapter 5.
- *
  * Algorithms:
- *   FCFS        – non-preemptive, arrival order                  (slide 5.8)
- *   SJF_NP      – non-preemptive, shortest original burst        (slide 5.11)
- *   SJF_P       – preemptive SRTF, shortest remaining time       (slide 5.14)
- *   PRIORITY_NP – non-preemptive, smallest int = highest pri     (slide 5.19)
- *   PRIORITY_P  – preemptive priority                            (slide 5.18)
- *   RR          – round robin with time quantum                  (slide 5.16)
- *
- * Metrics (slide 5.6):
+ *   FCFS        – non-preemptive, arrival order                  
+ *   SJF_NP      – non-preemptive, shortest original burst        
+ *   SJF_P       – preemptive SRTF, shortest remaining time       
+ *   PRIORITY_NP – non-preemptive, smallest int = highest pri     
+ *   PRIORITY_P  – preemptive priority                            
+ *   RR          – round robin with time quantum                 
  *   Turnaround time = completion_time - arrival_time
  *   Waiting time    = turnaround_time - burst_time
  */
@@ -38,14 +34,6 @@ public class Scheduler {
 
     // Non-preemptive algorithms hold this lock until the process finishes
     private Process locked = null;
-
-    // Preemptive algorithms (SJF_P, PRIORITY_P) track who is currently
-    // on the CPU so equal-key ties don't cause spurious context switches.
-    // FIX: previously used firstRunTime as tiebreak — that is wrong because
-    // a previously-run-but-preempted process also has a finite firstRunTime,
-    // so it could unfairly win the tiebreak over a brand-new arrival.
-    // The correct rule is: the *currently executing* process keeps the CPU
-    // when keys are equal. We track this with `currentlyRunning`.
     private Process currentlyRunning = null;
 
     // RR state
@@ -128,12 +116,9 @@ public class Scheduler {
         switch (algo) {
 
             // ──────────────────────────────────────────────────────────
-            // FCFS – Non-Preemptive  (slide 5.8)
+            // FCFS – Non-Preemptive  
             // Select earliest-arrival process; run to completion.
             // Tiebreak on arrival → PID string (deterministic).
-            //
-            // Slide 5.8: P1(b=24) P2(b=3) P3(b=3), all arrive t=0
-            //   P1[0-24], P2[24-27], P3[27-30], avg WT = 17 ✓
             // ──────────────────────────────────────────────────────────
             case FCFS:
                 if (locked != null && locked.remaining == 0) locked = null;
@@ -145,19 +130,7 @@ public class Scheduler {
                 break;
 
             // ──────────────────────────────────────────────────────────
-            // SJF – Non-Preemptive  (slide 5.11)
-            // At dispatch: pick process with shortest ORIGINAL burst.
-            // Runs to completion. Tiebreak: arrival, then PID.
-            //
-            // Slide 5.11: P1(arr=0,b=6) P2(arr=2,b=8)
-            //             P3(arr=4,b=7) P4(arr=5,b=3)
-            //   t=0 only P1 ready → locked=P1 [0-6]
-            //   t=6 ready={P2,P3,P4}; min burst=P4(3) → [6-9]
-            //   t=9 ready={P2,P3};    min burst=P1→done, P3(7) < P2(8) → [9-16]
-            //   t=16 only P2 → [16-24]
-            //   avg WT = (0+16+9+3)/4 = 7 ✓
-            //   (Note: slide 5.11 shows all arriving at t=0 for its specific
-            //    example giving P4[0-3],P1[3-9],P3[9-16],P2[16-24])
+            // SJF – Non-Preemptive  
             // ──────────────────────────────────────────────────────────
             case SJF_NP:
                 if (locked != null && locked.remaining == 0) locked = null;
@@ -170,27 +143,16 @@ public class Scheduler {
                 break;
 
             // ──────────────────────────────────────────────────────────
-            // SJF – Preemptive / SRTF  (slide 5.14)
+            // SJF – Preemptive / SRTF  
             // Every tick: select ready process with smallest REMAINING time.
             // A newly arrived process with shorter remaining immediately
             // preempts the running one.
             //
-            // Tiebreak rule (textbook):
+            // Tiebreak rule 
             //   When two processes tie on remaining time, the one already
             //   on the CPU keeps it — no unnecessary context switch.
             //   We implement this by checking `currentlyRunning` first.
             //   Secondary tiebreak: earliest arrival, then PID.
-            //
-            // Slide 5.14 verification:
-            //   P1(arr=0,b=8) P2(arr=1,b=4) P3(arr=2,b=9) P4(arr=3,b=5)
-            //   t=0:  {P1(rem=8)}               → P1 [0-1]
-            //   t=1:  {P1(7),P2(4)}             → P2 preempts [1-5]
-            //   t=2:  P3 arrives (rem=9>P2's 3) → P2 continues
-            //   t=3:  P4 arrives (rem=5>P2's 2) → P2 continues
-            //   t=5:  P2 done. {P1(6),P3(9),P4(5)} → P4 [5-10]
-            //   t=10: {P1(6),P3(9)}             → P1 [10-17]
-            //   t=17: {P3(9)}                   → P3 [17-26]
-            //   avg WT = [(10-1)+(1-1)+(17-2)+(5-3)]/4 = 6.5 ✓
             // ──────────────────────────────────────────────────────────
             case SJF_P: {
                 // Drop stale reference if the process just finished
@@ -227,16 +189,10 @@ public class Scheduler {
             }
 
             // ──────────────────────────────────────────────────────────
-            // Priority – Non-Preemptive  (slide 5.19)
-            // Smaller integer = higher priority (slide 5.18).
+            // Priority – Non-Preemptive  
+            // Smaller integer = higher priority 
             // At dispatch: pick highest-priority ready process, run to
             // completion.  Tiebreak: arrival, then PID.
-            //
-            // Slide 5.19 verification (all arrive t=0):
-            //   P1(b=10,pri=3) P2(b=1,pri=1) P3(b=2,pri=4)
-            //   P4(b=1,pri=5)  P5(b=5,pri=2)
-            //   P2[0-1], P5[1-6], P1[6-16], P3[16-18], P4[18-19]
-            //   avg WT = (6+0+16+18+1)/5 = 8.2 ✓
             // ──────────────────────────────────────────────────────────
             case PRIORITY_NP:
                 if (locked != null && locked.remaining == 0) locked = null;
@@ -289,7 +245,7 @@ public class Scheduler {
             }
 
             // ──────────────────────────────────────────────────────────
-            // Round Robin  (slides 5.15 – 5.16)
+            // Round Robin 
             // Each process gets at most `quantum` consecutive ticks, then
             // goes to the back of the ready queue.
             //
@@ -299,12 +255,6 @@ public class Scheduler {
             //   2. Re-enqueue the expiring current process AFTER new
             //      arrivals (standard RR: expiring goes to the back).
             //   3. Poll next process from the front.
-            //
-            // Slide 5.16 verification (q=4, all arrive t=0):
-            //   P1(b=24) P2(b=3) P3(b=3)
-            //   P1[0-4], P2[4-7], P3[7-10],
-            //   P1[10-14],[14-18],[18-22],[22-26],[26-30]
-            //   avg WT = (6+4+7)/3 = 5.67 ✓
             // ──────────────────────────────────────────────────────────
             case RR: {
                 boolean finished   = rrCurrent != null && rrCurrent.remaining == 0;
@@ -376,7 +326,7 @@ public class Scheduler {
         return selected;
     }
 
-    // ── Metrics (slide 5.6) ───────────────────────────────────────────
+    // ── Metrics 
     public double avgWaiting() {
         return processes.stream().mapToInt(p -> p.waiting).average().orElse(0);
     }
